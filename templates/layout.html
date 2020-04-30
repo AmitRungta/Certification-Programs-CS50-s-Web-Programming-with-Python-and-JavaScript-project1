@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Book Review!</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{ url_for('static', filename='navigationbar.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='heading.css') }}">
+    </head>
+    <body>
+        <div class="NavigationBar">
+            <a href="#" class="active">Home</a>
+            <a href="Interest.html">Interesting Options</a>
+            <a href="Technology.html">Technology</a>
+            <a href="ContactMe.html" class="right">Contact Me</a>
+          </div>
+        
+        <div class="header">
+            <h1>{% block heading %}{% endblock %}</h1>
+        </div>
+          
+        
+        <div class="PageData">
+            <div class="LeftColumn">
+                {% block LeftColData %}
+                {% endblock %}
+            </div>
+            <div class="MainColumn" style="text-align: justify;">
+                {% block body %}
+                {% endblock %}
+                  
+            </div>
+          </div>
+          
+          <div class="footer">
+            <h1>{% block Footer %}{% endblock %}</h1>
+          </div>
+          
+    </body>
+</html>

@@ -1,0 +1,64 @@
+* {
+  box-sizing: border-box; }
+
+/* Style the body */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0; }
+
+/* this is the generic settings for the header footer.
+ we will use this to show the inheritance in the web page.
+ */
+.header, .footer {
+  text-align: center;
+  color: white;
+  padding: 40px; }
+
+/* Header/logo Title */
+.header {
+  background: #1abc9c; }
+  .header h1 {
+    /* Increase the font size of the heading 
+     This helps us to demonstate the nesing feature of scss.  
+    */
+    font-size: 40px; }
+  .header h2 {
+    /* Change the color of Heading 2.
+     This helps us to demonstate the nesing feature of scss.  
+     */
+    font-size: 25px;
+    color: #ddd; }
+
+/* Footer */
+.footer {
+  padding: 5px;
+  background: #ddd; }
+
+/* Column container */
+.PageData {
+  display: flex;
+  flex-wrap: wrap; }
+
+/* Responsive layout - when the screen is less than 400px wide, make the two columns stack on top of each other 
+instead of next to each other */
+@media screen and (max-width: 400px) {
+  .PageData {
+    flex-direction: column; } }
+/* this is the generic settings for the columns inside a page data.
+ we will use this to show the inheritance in the web page.
+ */
+.LeftColumn, .MainColumn {
+  padding: 20px;
+  background-color: white; }
+
+/* Create two unequal columns that sits next to each other */
+/* Sidebar/left column */
+.LeftColumn {
+  flex: 20%;
+  background-color: #f1f1f1; }
+
+/* Main column */
+.MainColumn {
+  flex: 80%; }
+
+/*# sourceMappingURL=heading.css.map */
