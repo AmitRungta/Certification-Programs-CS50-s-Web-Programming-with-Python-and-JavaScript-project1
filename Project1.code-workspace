@@ -4,5 +4,7 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"python.pythonPath": "C:\\Users\\Amit\\AppData\\Local\\Programs\\Python\\Python37\\python.exe"
+	}
 }

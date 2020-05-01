@@ -1,11 +1,36 @@
-{% extends "layout.html" %}
+{% extends "LoginTemplate.html" %}
 
-{% block heading %}
-    Welcome Page
-{% endblock %}
+{% block FormData %}
 
-{% block body %}
+<h3 style="text-align: center;">Sign Up.</h2>
+  <p style="text-align: center;">Create your new account for book review.</p>
+  <form action="{{ url_for('createaccount') }}" method="post">
+    <div class="form-group">
 
-<p> Hello World</p>
+      <label>Display Name</label>
+      <input type="text" class="form-control" placeholder="Display Name" name="inputDisplayName"
+        {% if RegistrationData %} value="{{ RegistrationData.DisplayName}}" {% endif %}>
 
-{% endblock %}
+      <label>User Name</label>
+      <input type="text" class="form-control" placeholder="User Name" name="inputUserName" {% if RegistrationData %}
+        value="{{ RegistrationData.UserName}}" {% endif %}>
+
+      <label>Password</label>
+      <input type="password" class="form-control" placeholder="Password" name="inputPassword">
+
+      <label>Re-type Password</label>
+      <input type="password" class="form-control" placeholder="Retype Password" name="inputRePassword">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Account</button>
+  </form>
+  {% endblock %}
+
+
+
+
+  {% block AfterForm %}
+  <p>
+    Already have an account? <a href="{{ url_for('signin') }}">Sign in</a>
+  </p>
+  {% endblock %}

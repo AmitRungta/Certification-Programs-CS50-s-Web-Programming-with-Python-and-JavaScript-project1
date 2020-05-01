@@ -5,13 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+
+            "name": "Python: Flask",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "DATABASE_URL": "postgres://athncldfkluzpq:5dab398fc5ec4f2daf8f2c9b96062478b4cfce8bd2f398312da69fd998ace3db@ec2-34-204-22-76.compute-1.amazonaws.com:5432/d3hv5j2det4su0",
-            "FLASK_APP" : "inport.py"
+            "module": "flask",
+            "env": {
+                "DATABASE_URL": "postgres://athncldfkluzpq:5dab398fc5ec4f2daf8f2c9b96062478b4cfce8bd2f398312da69fd998ace3db@ec2-34-204-22-76.compute-1.amazonaws.com:5432/d3hv5j2det4su0",
+                "FLASK_APP" : "application.py",
+                "FLASK_DEBUG": "1"
+            },
+            "args": [
+                "run",
+            ],
+            "jinja": true
+
         }
     ]
 }

@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block ExtraStyle %}
+<style>
+  .row>div {
+    padding: 20px;
+    background-color: #eee;
+    border: solid gray;
+    box-shadow: blue;
+  }
+</style>
+{% endblock %}
+
+
+{% block heading %}
+Welcome to Book Review...
+{% endblock %}
+
+{% block BodyData %}
+
+<br>
+{% if ErrorMsg %}
+<div class="alert alert-danger" role="alert" style="text-align: center;">
+  {{ ErrorMsg }}
+</div>
+{% endif %}
+
+<div class="container">
+
+  <div class="row">
+    <div class="col-lg-3 col-sm-12" style="background-color:transparent;border: none;">
+    </div>
+
+    <div class="col-lg-6 col-sm-12">
+
+      {% block FormData %}
+      {% endblock %}
+
+    </div>
+    <div class="col-lg-3 col-sm-12" style="background-color:transparent;border: none;">
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center;">
+  <br>
+  <br>
+    {% block AfterForm %}
+    {% endblock %}
+</div>
+
+
+
+
+{% endblock %}

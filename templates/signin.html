@@ -1,0 +1,34 @@
+{% extends "LoginTemplate.html" %}
+
+{% block FormData %}
+
+<h3 style="text-align: center;">Sign In.</h2>
+  <p style="text-align: center;">Sign in using your account.</p>
+  <form action="{{ url_for('login') }}" method="post">
+    <div class="form-group">
+
+      <label>User Name</label>
+      <input type="text" class="form-control" placeholder="User Name" name="inputUserName" {% if UserName %}
+        value="{{ UserName}}" {% endif %}>
+
+      <label>Password</label>
+      <input type="password" class="form-control" placeholder="User Name" name="inputPassword">
+
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+  </form>
+  {% endblock %}
+
+
+
+  {% block AfterForm %}
+  <p>
+    Does not have an account? <a href="{{ url_for('index') }}">Sign Up</a>
+  </p>
+  {% endblock %}
+
+
+
+
+  
