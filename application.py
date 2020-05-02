@@ -33,6 +33,8 @@ class UserRegistrationData:
         self.UserName = UserName
 
 
+
+
 # General method to convert string for Query format.
 def IsValidUserName( UserName , CanContainBlank = False):
     if ( ( None == UserName ) or (not(UserName and UserName.strip())) ) :
@@ -55,6 +57,12 @@ def IsValidUserName( UserName , CanContainBlank = False):
     return ""
 
 
+def IsUserLoggedIn():
+    LoggedUserID = session.get('LoggedUserID')
+    if (None == LoggedUserID or LoggedUserID < 1):
+        return False
+    else:
+        return True
 
 
 
@@ -63,7 +71,10 @@ def IsValidUserName( UserName , CanContainBlank = False):
 #
 @app.route("/")
 def index():
-     return render_template("index.html")
+    if ( IsUserLoggedIn()) :
+        return redirect(url_for('booksearch'))
+
+    return render_template("index.html")
 
 
 #--------------------------------------------------------------------------
@@ -71,6 +82,9 @@ def index():
 #
 @app.route('/createaccount', methods = ['GET', 'POST'])
 def createaccount():
+    if ( IsUserLoggedIn()) :
+        return redirect(url_for('booksearch'))
+
     if request.method == 'GET':
         # if the user have come here directly then move back to index page.
         return redirect(url_for('index'))
@@ -119,7 +133,10 @@ def createaccount():
 #
 @app.route('/signin')
 def signin():
-     return render_template("signin.html")
+    if ( IsUserLoggedIn()) :
+        return redirect(url_for('booksearch'))
+
+    return render_template("signin.html")
 
 
 
@@ -128,6 +145,10 @@ def signin():
 #
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
+    if ( IsUserLoggedIn()) :
+        return redirect(url_for('booksearch'))
+
+
     if request.method == 'GET':
         # if the user have come here directly then move back to signin page.
         return redirect(url_for('signin'))
@@ -146,7 +167,7 @@ def login():
     # now lets check if the user with giben name and password esit or not.
     SelectData = None
     try:
-        SelectData = connection.execute("SELECT User_ID, DisplayName FROM UserData WHERE UserName = %(username)s AND Password = %(password)s", {'username': UserName , 'password' : UserPassword}).fetchone()
+        SelectData = connection.execute("SELECT User_ID, DisplayName , UserName , JoinDate FROM UserData WHERE UserName = %(username)s AND Password = %(password)s", {'username': UserName , 'password' : UserPassword}).fetchone()
         if ( None == SelectData ) :
             return  render_template("signin.html", ErrorMsg="User details for given name or password could not be fetched" , UserName = UserName)
 
@@ -155,8 +176,10 @@ def login():
 
     finally:
         if ( None != SelectData ):
-            session['UserDisplayName'] = SelectData[1]
-            session['UserID'] = SelectData[0]
+            session['LoggedUserDisplayName'] = SelectData[1]
+            session['LoggedUserID'] = SelectData[0]
+            session['LoggedUserName'] = SelectData[2]
+            session['LoggedUserJoiningDate'] = SelectData[3]
             return  redirect(url_for('booksearch'))
 
     return redirect(url_for('signin'))
@@ -168,25 +191,30 @@ def login():
 #
 @app.route('/logout')
 def logout():
-   # remove the username from the session if it is there
-   session.pop('UserDisplayName', None)
-   session.pop('UserID', None)
-   return redirect(url_for('signin'))
+    # remove the username from the session if it is there
+    if (IsUserLoggedIn()):
+        session.pop('LoggedUserDisplayName', None)
+        session.pop('LoggedUserID', None)
+        session.pop('LoggedUserName', None)
+        session.pop('LoggedUserJoiningDate', None)
+    return redirect(url_for('signin'))
 
 
 
 #--------------------------------------------------------------------------
 # show the book search page...
 #
-@app.route('/booksearch')
+@app.route('/booksearch', methods = ["GET", "POST"])
 def booksearch():
-   # Do the Book Search
-   UserID = session.get('UserID')
-   if ( None == UserID or len(UserID) < 1 ) :
-       return redirect(url_for('signin'))
+    # Do the Book Search
+    if ( not IsUserLoggedIn()) :
+        return redirect(url_for('signin'))
 
-   return  render_template("booksearch.html", UserDisplayName=session.get('UserDisplayName'))
+    if request.method == "POST":
+        InSearchString = request.form.get("inputSearchData")
+        if ((None == InSearchString) or (not(InSearchString and InSearchString.strip()))):
+            return render_template("booksearch.html", ErrorMsg="Search string is empty")
+            
 
-
-
+    return render_template("booksearch.html")
 

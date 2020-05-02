@@ -12,7 +12,7 @@ body {
 .header, .footer {
   text-align: center;
   color: white;
-  padding: 40px; }
+  padding: 10px; }
 
 /* Header/logo Title */
 .header {
@@ -21,12 +21,12 @@ body {
     /* Increase the font size of the heading 
      This helps us to demonstate the nesing feature of scss.  
     */
-    font-size: 40px; }
+    font-size: 30px; }
   .header h2 {
     /* Change the color of Heading 2.
      This helps us to demonstate the nesing feature of scss.  
      */
-    font-size: 25px;
+    font-size: 20px;
     color: #ddd; }
 
 /* Footer */

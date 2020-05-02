@@ -3,10 +3,8 @@
 
 {% block NavigationBar %}
 <div class="NavigationBar">
-    <a href="#" class="active">Home</a>
-    <a href="Interest.html">Interesting Options</a>
-    <a href="Technology.html">Technology</a>
-    <a href="ContactMe.html" class="right">Contact Me</a>
+    <a href="{{ url_for('booksearch') }}">Book Search</a>
+    <a href="{{ url_for('logout') }}" class="right">Log Out</a>
   </div>
 {% endblock %}
 
