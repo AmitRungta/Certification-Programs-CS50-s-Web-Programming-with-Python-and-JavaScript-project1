@@ -1,0 +1,37 @@
+{% if session.get('LoggedUserID') %}
+    {% extends "layoutLoggedPages.html" %}
+{% else %}
+{% extends "LoginTemplate.html" %}
+{% endif %}
+    
+
+
+
+{% block heading %}
+{{title}}
+{% endblock %}
+
+{% block BodyData %}
+
+<center>
+      <br />
+      <table border="0" align="center" cellpadding="4">
+        <tr>
+          <td valign="middle" class="sans">
+            <b class="h1"> 
+              Looking for something?
+            </b>
+            <br />
+              We're sorry. The Web address you entered is not a functioning page on our site.
+            <br />
+            <br />
+            <b>
+              Go to our <a href="{{ url_for('index') }}">Main Page</a>.
+            </b>
+          </td>
+        </tr>
+      </table>
+    </center>
+
+
+{% endblock %}

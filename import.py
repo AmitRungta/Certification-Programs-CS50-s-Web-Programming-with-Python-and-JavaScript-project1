@@ -11,8 +11,7 @@ from sqlalchemy import Table, MetaData , engine , create_engine
 
 def main():
     # Create the engine for database connection...
-    # engine = create_engine(os.getenv("DATABASE_URL"))
-    engine = create_engine("postgres://athncldfkluzpq:5dab398fc5ec4f2daf8f2c9b96062478b4cfce8bd2f398312da69fd998ace3db@ec2-34-204-22-76.compute-1.amazonaws.com:5432/d3hv5j2det4su0")
+    engine = create_engine(os.getenv("DATABASE_URL"))
     if engine == None:
         return print("Unable to create the engine")     # We are unable to create the engine hence return.
 

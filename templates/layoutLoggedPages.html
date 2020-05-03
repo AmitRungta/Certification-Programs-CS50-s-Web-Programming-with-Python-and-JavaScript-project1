@@ -8,3 +8,13 @@
   </div>
 {% endblock %}
 
+{% block heading %}
+{% if session.get('LoggedUserDisplayName') %}
+Welcome {{ session.get('LoggedUserDisplayName') }}
+
+{% if session.get('LoggedUserJoiningDate') %}
+<p style="font-size: medium;"> (Member since {{ session.get('LoggedUserJoiningDate') }})</p>
+{% endif %}
+
+{% endif %}
+{% endblock %}

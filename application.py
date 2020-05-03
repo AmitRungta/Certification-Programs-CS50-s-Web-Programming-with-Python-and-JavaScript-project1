@@ -1,8 +1,9 @@
 import os
 
-from flask import Flask,  session , render_template , redirect , url_for , escape , request
+from flask import Flask,  session , render_template , redirect , url_for , escape , request , abort
 from flask_session import Session
-from sqlalchemy import create_engine 
+from sqlalchemy import create_engine
+from datetime import datetime
 
 app = Flask(__name__)
 # Configure session to use filesystem
@@ -15,9 +16,8 @@ app.config["SESSION_TYPE"] = "filesystem"
 
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
-    # raise RuntimeError("DATABASE_URL is not set")
-    DatabaseUrl = "postgres://athncldfkluzpq:5dab398fc5ec4f2daf8f2c9b96062478b4cfce8bd2f398312da69fd998ace3db@ec2-34-204-22-76.compute-1.amazonaws.com:5432/d3hv5j2det4su0"
-else: 
+    RuntimeError("DATABASE_URL is not set")
+else:
     DatabaseUrl = os.getenv("DATABASE_URL")
 
 
@@ -31,6 +31,7 @@ class UserRegistrationData:
     def __init__(self, DisplayName, UserName):
         self.DisplayName = DisplayName
         self.UserName = UserName
+
 
 
 
@@ -112,7 +113,7 @@ def createaccount():
 
 
     # now lets check if the user name is already present or not.
-    #  
+    #
     SelectQuery = f"SELECT *FROM UserData WHERE UserName = '{UserRegistrationData.UserName}'"
     RowCount = connection.execute(SelectQuery).rowcount
     if ( RowCount > 0):
@@ -197,6 +198,8 @@ def logout():
         session.pop('LoggedUserID', None)
         session.pop('LoggedUserName', None)
         session.pop('LoggedUserJoiningDate', None)
+        session.pop('CurBookID', None)
+        
     return redirect(url_for('signin'))
 
 
@@ -204,17 +207,142 @@ def logout():
 #--------------------------------------------------------------------------
 # show the book search page...
 #
-@app.route('/booksearch', methods = ["GET", "POST"])
+@app.route('/booksearch/', methods = ["GET", "POST"])
 def booksearch():
     # Do the Book Search
     if ( not IsUserLoggedIn()) :
         return redirect(url_for('signin'))
 
+    #remove the current book selection    
+    session.pop('CurBookID', None)
+
     if request.method == "POST":
         InSearchString = request.form.get("inputSearchData")
+        InSearchColumn = request.form.get("inputSearchColumn")
+        if ((None == InSearchColumn) or (not(InSearchColumn in { "isbn" , "author" , "title" } ))):
+            InSearchColumn ="isbn"
+
         if ((None == InSearchString) or (not(InSearchString and InSearchString.strip()))):
-            return render_template("booksearch.html", ErrorMsg="Search string is empty")
-            
+            return render_template("booksearch.html", ErrorMsg="Search string is empty", SearchColumn=InSearchColumn)
+
+
+        if ( 'isbn' == InSearchColumn ) :
+            SearchCriteria = "ISBN"
+        elif ( 'author' == InSearchColumn ) :
+            SearchCriteria = "Author"
+        elif ( 'title' == InSearchColumn ) :
+            SearchCriteria = "Title"
+        else :
+            SearchCriteria = "ISBN"
+
+        FinalSearchString = "%" + InSearchString + "%"
+        # SearchQuery = "SELECT * FROM BooksData WHERE " + SearchCriteria + " iLike %(isbn)s"
+
+        SearchQuery = "SELECT BooksData.*, BookReview.Review , BookReview.Rating FROM BooksData \
+        LEFT JOIN BookReview \
+        ON BooksData.Book_ID=BookReview.Book_ID and BookReview.User_ID = " + str(session['LoggedUserID']) + " \
+        WHERE " + SearchCriteria + " iLike %(isbn)s"
+
+
+        BooksData = connection.execute(SearchQuery, { 'isbn': FinalSearchString } ).fetchall()
+        if ( None == BooksData or len(BooksData) < 1 ) :
+            return render_template("booksearch.html", ErrorMsg="No books data found...." , SearchData=InSearchString, SearchColumn=InSearchColumn)
+
+        return render_template("booksearch.html", BooksData=BooksData, SearchData=InSearchString , SearchColumn=InSearchColumn)
 
     return render_template("booksearch.html")
 
+
+
+
+
+#--------------------------------------------------------------------------
+# show the book details page...
+#
+@app.route('/bookpage/<int:Book_ID>')
+def bookpage(Book_ID):
+    # Do the Book Search
+    if ( not IsUserLoggedIn()) :
+        return redirect(url_for('signin'))
+
+    session['CurBookID'] = Book_ID
+    if ((None == Book_ID) or ( Book_ID < 1 ) ):
+        abort(404 , description="Book data not found (Invalid ID)" )
+
+    # Now lets find the details for the book...
+    SearchQuery = f"SELECT * FROM BooksData WHERE Book_ID = {Book_ID}"
+    BookData = connection.execute(SearchQuery).fetchone()
+
+    if ( None == BookData ) :
+        abort(404 , description="Book data not found" )
+
+    # Now lets fetch the book review by the current user..
+    SearchQuery = f"SELECT * FROM BookReview WHERE Book_ID = {Book_ID} AND User_ID = {session['LoggedUserID']}"
+    BookReview = connection.execute(SearchQuery).fetchone()
+
+    return render_template("bookpage.html", BookData=BookData, BookReview=BookReview)
+
+
+
+
+
+#--------------------------------------------------------------------------
+# show the book search page...
+#
+@app.route('/submitreview', methods = ["POST"])
+def submitreview():
+    # Do the Book Search
+    if ( not IsUserLoggedIn()) :
+        return redirect(url_for('signin'))
+
+    if not 'CurBookID' in session:
+        return redirect(url_for('booksearch'))
+
+    Book_ID = int(session['CurBookID'])
+    # Now lets fetch the book review by the current user..
+    SearchQuery = f"SELECT * FROM BookReview WHERE Book_ID = {Book_ID} AND User_ID = {session['LoggedUserID']}"
+    BookReview = connection.execute(SearchQuery).fetchone()
+
+    buttonaction = request.form.get ('btnaction')
+
+    if ( 'CancelReview' == buttonaction ):
+        return redirect(url_for('bookpage',Book_ID=Book_ID))
+    elif ( 'DeleteReview' == buttonaction ):
+        # set the review for this book
+        finalquery = f"Delete From BookReview WHERE Review_ID = {BookReview[0]}" 
+        connection.execute(finalquery)
+        return redirect(url_for('bookpage',Book_ID=Book_ID))
+    
+
+    # Now lets find the details for the book...
+    SearchQuery = f"SELECT * FROM BooksData WHERE Book_ID = {Book_ID}"
+    BookData = connection.execute(SearchQuery).fetchone()
+
+    InRating = request.form.get("inputRating")
+    InReview = request.form.get("inputReview")
+
+    if ((None == InRating) or (not(InRating and InRating.strip()))):
+        return render_template("bookpage.html", ErrorMsg="Book Rating is not valid", BookData=BookData , BookReview=BookReview , InRating=InRating , InReview=InReview)
+    if ((None == InReview) or (not(InReview and InReview.strip()))):
+        return render_template("bookpage.html", ErrorMsg="Book review cannot be left blank", BookData=BookData, BookReview=BookReview , InRating=InRating , InReview=InReview)
+
+    if ( 'SetReview' == buttonaction ):
+        # set the review for this book
+        finalquery = "INSERT INTO BookReview (Book_ID, User_ID , Review , Rating ) VALUES ({bookid}, {userid}, '{review}' , {rating})" \
+                    .format(bookid=Book_ID , userid = session['LoggedUserID'] , review = InReview , rating = int(InRating)) 
+        connection.execute(finalquery)
+    elif ( 'UpdateReview' == buttonaction ):
+        # set the review for this book
+        finalquery = "Update BookReview SET Book_ID = {bookid} , User_ID = {userid} , Review = '{review}' , Rating = {rating} , ReviewDate = '{reviewdate}' WHERE Review_ID = {reviewid}" \
+                    .format(bookid=Book_ID , userid = session['LoggedUserID'] , review = InReview , rating = int(InRating) , reviewid = BookReview[0] , reviewdate = datetime.utcnow()) 
+        connection.execute(finalquery)
+        
+        
+    return redirect(url_for('bookpage',Book_ID=Book_ID))
+
+
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+   return render_template('404.html', title = str(error)), 404

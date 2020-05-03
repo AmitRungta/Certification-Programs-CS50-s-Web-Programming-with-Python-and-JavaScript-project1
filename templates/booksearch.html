@@ -1,12 +1,16 @@
 {% extends "layoutLoggedPages.html" %}
 
-{% block heading %}
-    {% if session.get('LoggedUserDisplayName') %}
-        Welcome {{ session.get('LoggedUserDisplayName') }} 
-    {% else %}
-        Book Search
-    {% endif %}
+
+
+{% block ExtraStyle %}
+<style>
+    .table tbody tr:hover td,
+    .table tbody tr:hover th {
+        background-color: lightskyblue;
+    }
+</style>
 {% endblock %}
+
 
 {% block BodyData %}
 <table width="100%" border="0">
@@ -15,13 +19,25 @@
             <td>
                 <form name="searchbook" action="{{ url_for('booksearch') }}" method="post"><br>
                     <div class="form-group" style="width: 50%;">
-                        <input autofocus="autofocus" class="form-control"  name="inputSearchData" {% if SearchData %} value="{{ SearchData}}"
-                            {% endif %}>
+                        <input autofocus="autofocus" class="form-control" name="inputSearchData" {% if SearchData %}
+                            value="{{ SearchData}}" {% endif %}>
                     </div>
                     <font><b>Search in fields</b></font>
-                    <input type="radio" name="column" value="title">Title
-                    <input type="radio" name="column" value="author">Author(s)
-                    <input type="radio" name="column" value="identifier" checked="">ISBN
+                    <input type="radio" name="inputSearchColumn" id="title" value="title"
+                    {% if SearchColumn and SearchColumn == "title" %}
+                    checked=""
+                    {% endif %}
+                    >Title
+                    <input type="radio" name="inputSearchColumn" id="author" value="author"
+                    {% if SearchColumn and SearchColumn == "author" %}
+                    checked=""
+                    {% endif %}
+                    >Author(s)
+                    <input type="radio" name="inputSearchColumn" id="isbn" value="isbn" 
+                    {% if not SearchColumn or SearchColumn == "isbn" %}
+                    checked=""
+                    {% endif %}
+                    >ISBN
                     <button type="submit" class="btn btn-primary">Search</button>
                 </form>
             </td>
@@ -33,13 +49,43 @@
 <br>
 {% if ErrorMsg %}
 <div class="alert alert-danger" role="alert" style="text-align: center;">
-  {{ ErrorMsg }}
+    {{ ErrorMsg }}
 </div>
 {% endif %}
-
 <br>
+{% if BooksData %}
 
 
+<div class="mx-auto" style="width: 90%;">
+    <p style="color: gray; font-style: italic;">Total entries found : {{ BooksData|length}} </p>
+    <table class="table table-hover table-striped">
+        <thead>
+            <tr>
+                <th scope="col">ISBN#</a></th>
+                <th scope="col">Title</a></th>
+                <th scope="col">Aurthor</a></th>
+                <th scope="col">Year</a></th>
+                <th scope="col">Your Rating</a></th>
+                <th scope="col">Your Review</a></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in BooksData %}
+            <tr>
+                <td><a href="{{ url_for('bookpage',Book_ID=book[0]) }}" class="stretched-link">{{book[1]}} </a></td>
+                <td><a href="{{ url_for('bookpage',Book_ID=book[0]) }}" class="stretched-link">{{book[2]}}</a></td>
+                <td>{{book[3]}}</a></td>
+                <td>{{book[4]}}</a></td>
+                <td>{% if book[6] %} <a href="{{ url_for('bookpage',Book_ID=book[0]) }}" class="stretched-link">{{book[6]}}</a> {% endif %}</td>
+                <td>{% if book[5] %} <a href="{{ url_for('bookpage',Book_ID=book[0]) }}" class="stretched-link">{{book[5]}}</a> {% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+</div>
+<br>
+{% endif %}
 
 
 {% endblock %}
