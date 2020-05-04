@@ -15,7 +15,7 @@
 
 <br>
 
-{% if BookData %}
+{% if BookDetails and BookDetails.BookData %}
 
 
 <div class="mx-auto" style="width: 90%;">
@@ -26,14 +26,22 @@
                 <th scope="col">Title</th>
                 <th scope="col">Aurthor</th>
                 <th scope="col">Year</th>
+                {% if  BookDetails.GoodReadReviews and BookDetails.GoodReadReviews['ratings_count'] > 0 %}
+                <th scope="col">GoodRead Rating Count</th>
+                <th scope="col">GoodRead Average Rating</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{BookData[1]}}</td>
-                <td>{{BookData[2]}}</td>
-                <td>{{BookData[3]}}</td>
-                <td>{{BookData[4]}}</td>
+                <td>{{BookDetails.BookData[1]}}</td>
+                <td>{{BookDetails.BookData[2]}}</td>
+                <td>{{BookDetails.BookData[3]}}</td>
+                <td>{{BookDetails.BookData[4]}}</td>
+                {% if  BookDetails.GoodReadReviews and BookDetails.GoodReadReviews['ratings_count'] > 0 %}
+                <td>{{BookDetails.GoodReadReviews['ratings_count']}}</td>
+                <td>{{BookDetails.GoodReadReviews['average_rating']}}</td>
+                {% endif %}
             </tr>
         </tbody>
 
@@ -42,24 +50,27 @@
 
 
 
-{% if BookReview %}
 
-<table width="100%" border="0">
-    <p>You have last reviewed this book on {{BookReview[5].strftime('%c')}}</p>
+
+
+{% if BookDetails.BookReview %}
+
+<table >
+    <p>You have last reviewed this book on {{BookDetails.BookReview[5].strftime('%c')}}</p>
     <tbody>
         <tr>
             <td>
                 <form name="submitreview" action="{{ url_for('submitreview') }}" method="post"><br>
                     <div class="form-group" style="width: 90%;">
                         <label for="submitreview"><b>Review :</b></label>
-                        <textarea id="submitreview" name="inputReview" cols="100" maxlength="500" style="text-align: justify;" placeholder="Type your review here">{% if InReview %}{{InReview}}{% else %}{{BookReview[3]}}{% endif %}</textarea>
+                        <textarea id="submitreview" name="inputReview" cols="100" maxlength="500" style="text-align: justify;" placeholder="Type your review here">{% if InReview %}{{InReview}}{% else %}{{BookDetails.BookReview[3]}}{% endif %}</textarea>
                     </div>
                     <font><b>Rating : </b></font>
-                    <input type="radio" name="inputRating" id="1Star" value="1" {% if InRating and InRating == "1" %}checked="" {% else %} {% if BookReview[4] == 1 %}checked="" {% endif %} {% endif %} >1 Star
-                    <input type="radio" name="inputRating" id="2Star" value="2" {% if InRating and InRating == "2" %}checked="" {% else %} {% if BookReview[4] == 2 %}checked="" {% endif %} {% endif %} >2 Star
-                    <input type="radio" name="inputRating" id="3Star" value="3" {% if InRating and InRating == "3" %}checked="" {% else %} {% if BookReview[4] == 3 %}checked="" {% endif %} {% endif %} >3 Star
-                    <input type="radio" name="inputRating" id="4Star" value="4" {% if InRating and InRating == "4" %}checked="" {% else %} {% if BookReview[4] == 4 %}checked="" {% endif %} {% endif %} >4 Star
-                    <input type="radio" name="inputRating" id="5Star" value="5" {% if InRating and InRating == "5" %}checked="" {% else %} {% if BookReview[4] == 5 %}checked="" {% endif %} {% endif %} >5 Star
+                    <input type="radio" name="inputRating" id="1Star" value="1" {% if InRating and InRating == "1" %}checked="" {% else %} {% if BookDetails.BookReview[4] == 1 %}checked="" {% endif %} {% endif %} >1 Star
+                    <input type="radio" name="inputRating" id="2Star" value="2" {% if InRating and InRating == "2" %}checked="" {% else %} {% if BookDetails.BookReview[4] == 2 %}checked="" {% endif %} {% endif %} >2 Star
+                    <input type="radio" name="inputRating" id="3Star" value="3" {% if InRating and InRating == "3" %}checked="" {% else %} {% if BookDetails.BookReview[4] == 3 %}checked="" {% endif %} {% endif %} >3 Star
+                    <input type="radio" name="inputRating" id="4Star" value="4" {% if InRating and InRating == "4" %}checked="" {% else %} {% if BookDetails.BookReview[4] == 4 %}checked="" {% endif %} {% endif %} >4 Star
+                    <input type="radio" name="inputRating" id="5Star" value="5" {% if InRating and InRating == "5" %}checked="" {% else %} {% if BookDetails.BookReview[4] == 5 %}checked="" {% endif %} {% endif %} >5 Star
                     <button type="submit" class="btn btn-primary btn-sm" name="btnaction" value="UpdateReview">Update Review</button>
                     <button type="submit" class="btn btn-warning btn-sm" name="btnaction" value="CancelReview">Cancel Review</button>
                     <button type="submit" class="btn btn-danger btn-sm" style="size: 30rem;" name="btnaction" value="DeleteReview">Delete Review</button>

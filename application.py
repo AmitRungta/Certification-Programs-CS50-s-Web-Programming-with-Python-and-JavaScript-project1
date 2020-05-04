@@ -1,9 +1,11 @@
 import os
 
-from flask import Flask,  session , render_template , redirect , url_for , escape , request , abort
+from flask import Flask,  session , render_template , redirect , url_for , escape , request , abort , jsonify
 from flask_session import Session
 from sqlalchemy import create_engine
 from datetime import datetime
+import requests
+
 
 app = Flask(__name__)
 # Configure session to use filesystem
@@ -33,11 +35,18 @@ class UserRegistrationData:
         self.UserName = UserName
 
 
+class BookDetails:
+    def __init__(self, BookData, BookReview , GoodReadReviews ):
+        self.BookData = BookData
+        self.BookReview = BookReview
+        self.GoodReadReviews = GoodReadReviews
+
 
 
 
 # General method to convert string for Query format.
 def IsValidUserName( UserName , CanContainBlank = False):
+    """Checks if teh entry is a valid or not."""
     if ( ( None == UserName ) or (not(UserName and UserName.strip())) ) :
         return "cannot be empty."
 
@@ -59,6 +68,7 @@ def IsValidUserName( UserName , CanContainBlank = False):
 
 
 def IsUserLoggedIn():
+    """Check if a user is logged in or not using session data."""
     LoggedUserID = session.get('LoggedUserID')
     if (None == LoggedUserID or LoggedUserID < 1):
         return False
@@ -83,6 +93,7 @@ def index():
 #
 @app.route('/createaccount', methods = ['GET', 'POST'])
 def createaccount():
+    """Checks and creates a new account for the user."""
     if ( IsUserLoggedIn()) :
         return redirect(url_for('booksearch'))
 
@@ -146,6 +157,7 @@ def signin():
 #
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
+    """LOgin the user after validating his credentials.."""
     if ( IsUserLoggedIn()) :
         return redirect(url_for('booksearch'))
 
@@ -192,6 +204,7 @@ def login():
 #
 @app.route('/logout')
 def logout():
+    """logout a user."""
     # remove the username from the session if it is there
     if (IsUserLoggedIn()):
         session.pop('LoggedUserDisplayName', None)
@@ -209,6 +222,7 @@ def logout():
 #
 @app.route('/booksearch/', methods = ["GET", "POST"])
 def booksearch():
+    """DO a book search."""
     # Do the Book Search
     if ( not IsUserLoggedIn()) :
         return redirect(url_for('signin'))
@@ -254,6 +268,41 @@ def booksearch():
 
 
 
+#--------------------------------------------------------------------------
+# Gives the details for the book with given book ID like Book Data and Book Review...
+#
+def fnGetBookDetails(Book_ID ):
+    """Gives the details for the book with given book ID like Book Data and Book Review."""
+    if ((None == Book_ID) or ( Book_ID < 1 ) ):
+        return None
+
+    SearchQuery = f"SELECT * FROM BooksData WHERE Book_ID = {Book_ID}"
+    BookData = connection.execute(SearchQuery).fetchone()
+    
+    if ( None == BookData ) :
+        return None
+
+    # Now lets fetch the book review by the current user..
+    SearchQuery = f"SELECT * FROM BookReview WHERE Book_ID = {Book_ID} AND User_ID = {session['LoggedUserID']}"
+    BookReview = connection.execute(SearchQuery).fetchone()
+
+    # Now lets try to fetch the good books review...
+    res = requests.get("https://www.goodreads.com/book/review_counts.json",
+                       params={"key": "vgmf6zfC5WkH9Ef0XyaNg", "isbns": BookData[1]})
+
+    GoodReadReviews = None    
+    if ( res.status_code == 200 ):
+        data = res.json()
+        if 'books' in data :
+            booksdata = data.get('books')
+            if ( booksdata and 1 == len ( booksdata ) ):
+                curbook = booksdata[0]
+                work_ratings_count = curbook.get('work_ratings_count',0)
+                average_rating = curbook.get('average_rating',1.)
+                GoodReadReviews = {"ratings_count" : work_ratings_count , "average_rating" : average_rating }
+
+    return BookDetails( BookData=BookData , BookReview=BookReview , GoodReadReviews= GoodReadReviews)
+
 
 
 #--------------------------------------------------------------------------
@@ -261,6 +310,8 @@ def booksearch():
 #
 @app.route('/bookpage/<int:Book_ID>')
 def bookpage(Book_ID):
+    """Return details of a book with given database book_ID."""
+
     # Do the Book Search
     if ( not IsUserLoggedIn()) :
         return redirect(url_for('signin'))
@@ -270,17 +321,11 @@ def bookpage(Book_ID):
         abort(404 , description="Book data not found (Invalid ID)" )
 
     # Now lets find the details for the book...
-    SearchQuery = f"SELECT * FROM BooksData WHERE Book_ID = {Book_ID}"
-    BookData = connection.execute(SearchQuery).fetchone()
-
-    if ( None == BookData ) :
+    BookDetails = fnGetBookDetails ( Book_ID )
+    if ( None == BookDetails or None == BookDetails.BookData ) :
         abort(404 , description="Book data not found" )
 
-    # Now lets fetch the book review by the current user..
-    SearchQuery = f"SELECT * FROM BookReview WHERE Book_ID = {Book_ID} AND User_ID = {session['LoggedUserID']}"
-    BookReview = connection.execute(SearchQuery).fetchone()
-
-    return render_template("bookpage.html", BookData=BookData, BookReview=BookReview)
+    return render_template("bookpage.html", BookDetails=BookDetails)
 
 
 
@@ -291,40 +336,43 @@ def bookpage(Book_ID):
 #
 @app.route('/submitreview', methods = ["POST"])
 def submitreview():
+    """Submits a review for the given book."""
+
     # Do the Book Search
     if ( not IsUserLoggedIn()) :
         return redirect(url_for('signin'))
 
     if not 'CurBookID' in session:
         return redirect(url_for('booksearch'))
-
     Book_ID = int(session['CurBookID'])
-    # Now lets fetch the book review by the current user..
-    SearchQuery = f"SELECT * FROM BookReview WHERE Book_ID = {Book_ID} AND User_ID = {session['LoggedUserID']}"
-    BookReview = connection.execute(SearchQuery).fetchone()
 
+    # Get the button action to perform
     buttonaction = request.form.get ('btnaction')
-
     if ( 'CancelReview' == buttonaction ):
         return redirect(url_for('bookpage',Book_ID=Book_ID))
-    elif ( 'DeleteReview' == buttonaction ):
-        # set the review for this book
-        finalquery = f"Delete From BookReview WHERE Review_ID = {BookReview[0]}" 
-        connection.execute(finalquery)
-        return redirect(url_for('bookpage',Book_ID=Book_ID))
-    
+
 
     # Now lets find the details for the book...
-    SearchQuery = f"SELECT * FROM BooksData WHERE Book_ID = {Book_ID}"
-    BookData = connection.execute(SearchQuery).fetchone()
+    BookDetails = fnGetBookDetails ( Book_ID )
+    if ( None == BookDetails or None == BookDetails.BookData ) :
+        abort(404 , description="Book data not found" )
+
+
+    if ( 'DeleteReview' == buttonaction ):
+        # set the review for this book
+        if ( BookDetails.BookReview ):
+            finalquery = f"Delete From BookReview WHERE Review_ID = {BookDetails.BookReview[0]}" 
+            connection.execute(finalquery)
+        return redirect(url_for('bookpage',Book_ID=Book_ID))
+    
 
     InRating = request.form.get("inputRating")
     InReview = request.form.get("inputReview")
 
     if ((None == InRating) or (not(InRating and InRating.strip()))):
-        return render_template("bookpage.html", ErrorMsg="Book Rating is not valid", BookData=BookData , BookReview=BookReview , InRating=InRating , InReview=InReview)
+        return render_template("bookpage.html", ErrorMsg="Book Rating is not valid", BookDetails=BookDetails , InRating=InRating , InReview=InReview)
     if ((None == InReview) or (not(InReview and InReview.strip()))):
-        return render_template("bookpage.html", ErrorMsg="Book review cannot be left blank", BookData=BookData, BookReview=BookReview , InRating=InRating , InReview=InReview)
+        return render_template("bookpage.html", ErrorMsg="Book review cannot be left blank", BookDetails=BookDetails, InRating=InRating , InReview=InReview)
 
     if ( 'SetReview' == buttonaction ):
         # set the review for this book
@@ -334,7 +382,7 @@ def submitreview():
     elif ( 'UpdateReview' == buttonaction ):
         # set the review for this book
         finalquery = "Update BookReview SET Book_ID = {bookid} , User_ID = {userid} , Review = '{review}' , Rating = {rating} , ReviewDate = '{reviewdate}' WHERE Review_ID = {reviewid}" \
-                    .format(bookid=Book_ID , userid = session['LoggedUserID'] , review = InReview , rating = int(InRating) , reviewid = BookReview[0] , reviewdate = datetime.utcnow()) 
+                    .format(bookid=Book_ID , userid = session['LoggedUserID'] , review = InReview , rating = int(InRating) , reviewid = BookDetails.BookReview[0] , reviewdate = datetime.utcnow()) 
         connection.execute(finalquery)
         
         
@@ -346,3 +394,39 @@ def submitreview():
 @app.errorhandler(404)
 def page_not_found(error):
    return render_template('404.html', title = str(error)), 404
+
+
+
+
+@app.route("/api/<Book_Isbn>")
+def BookIsbnApi(Book_Isbn):
+    """Return details for the given book."""
+
+    if ((None == Book_Isbn) or (not(Book_Isbn and Book_Isbn.strip()))):
+        return jsonify({"error": "Invalid book isbn number in request"}), 422
+
+    # convert the desired string to stripped format for proper checking
+    Book_Isbn = Book_Isbn.strip() 
+
+    # Lets first get the book details for this book with given ISBN number.
+    BookData = connection.execute("SELECT * FROM BooksData WHERE LOWER(ISBN) = %(isbn)s" , { 'isbn': Book_Isbn.lower() } ).fetchone()
+
+    if BookData is None:
+        return jsonify({"error": f"Book data with isbn number '{Book_Isbn}' not found"}), 404
+
+    # AmitTempCode Do the average review data here....
+    ReviewCount = 0 
+    AverageScore = 1.0
+    RatingData = connection.execute( f"SELECT COUNT(Rating), AVG(Rating) FROM BookReview WHERE Book_ID = {BookData[0]}" , ).fetchone()
+    if ( RatingData ):
+        ReviewCount = RatingData[0] 
+        AverageScore = float(RatingData[1])
+
+    return jsonify({
+            "title": BookData[2],
+            "author": BookData[3],
+            "year": BookData[4],
+            "isbn": BookData[1],
+            "review_count": ReviewCount,
+            "average_score": round ( AverageScore , 2 )
+        })

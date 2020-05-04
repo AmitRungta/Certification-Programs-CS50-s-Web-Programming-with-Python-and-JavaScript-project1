@@ -22,17 +22,12 @@ Requirements :
 --> Book Page: In this page user seeis the  books detail with any review if he has already given. If the user has already given a review then he can delete it or modify it. If no review is specified then he can set a new review for it. 
 
 
---> Goodreads Review Data: On your book page, you should also display (if available) the
-average rating and number of ratings the work has received from Goodreads.
-**************************************************************************
+--> API Access: If users make a GET request to the website’s /api/<isbn> route, where <isbn> is an ISBN number, then i return the correct data for the book. In case if the book is not found the we return a 404 error. The api response also contains the average rating and rating count. If no rating has been given to this book then the review count is 0 and the average rating is 1.
 
 
+--> Goodreads Review Data: When fetching data for the book details also fetching data for review on the GoodRead site. If this review is available then displaying it in the books details page also..
 
---> API Access: If users make a GET request to your website’s /api/<isbn> route, where
-<isbn> is an ISBN number, your website should return a JSON response containing the
-book’s title, author, publication date, ISBN number, review count, and average score. The
-resulting JSON should follow the format:
-**************************************************************************
+
 
 
 
